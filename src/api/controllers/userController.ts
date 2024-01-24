@@ -48,7 +48,7 @@ const userGet = async (
 // - password should be at least 5 characters long
 // userPost should use bcrypt to hash password
 const userPost = async (
-  req: Request<{}, {}, User>,
+  req: Request<{}, {}, Omit<User, 'user_id' | 'role'>>,
   res: Response<MessageResponse>,
   next: NextFunction
 ) => {
@@ -58,30 +58,16 @@ const userPost = async (
       .array()
       .map((error) => `${error.msg}: ${error.param}`)
       .join(', ');
-    console.log('userPost validation', messages);
+    console.log('cat_post validation', messages);
     next(new CustomError(messages, 400));
     return;
   }
-  // Helper function for basic email validation
-  const isValidEmail = (email: string): boolean => {
-    // Implement a basic email format check
-    const emailRegex = /^[^\s@]+@[^öäå\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
 
   try {
-    const {user_name, email, password, role} = req.body;
-    // validate user_name, email, password
-    if (user_name.length < 3 || !isValidEmail(email) || password.length < 5) {
-      throw new CustomError('Invalid input', 400);
-    }
-    const hashedPassword = bcrypt.hashSync(password, salt);
-    const result = await addUser({
-      user_name,
-      email,
-      password: hashedPassword,
-      role,
-    });
+    const user = req.body;
+    user.password = bcrypt.hashSync(user.password, salt);
+    const result = await addUser(user);
+
     res.json(result);
   } catch (error) {
     next(error);

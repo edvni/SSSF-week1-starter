@@ -24,7 +24,11 @@ const catListGet = async (
   }
 };
 
-const catGet = async (req: Request, res: Response<Cat>, next: NextFunction) => {
+const catGet = async (
+  req: Request,
+  res: Response<Omit<Cat, 'lat' | 'lng'>>,
+  next: NextFunction
+) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const messages: string = errors
@@ -56,7 +60,7 @@ const catPost = async (
   // catPost should use req.file to get filename
   // catPost should use res.locals.coords to get lat and lng (see middlewares.ts)
   // catPost should use req.user to get user_id and role (see passport/index.ts and express.d.ts)
-  const errors = validationResult(req);
+  const errors = validationResult(req.body);
   if (!errors.isEmpty()) {
     const messages: string = errors
       .array()
@@ -64,9 +68,7 @@ const catPost = async (
       .join(', ');
     console.log('catPost validation', messages);
     next(new CustomError(messages, 400));
-    return;
   }
-
   try {
     const cat = req.body;
     const filename = req.file?.filename || '';
@@ -76,7 +78,7 @@ const catPost = async (
       cat_name: cat.cat_name,
       weight: cat.weight,
       owner: user.user_id,
-      filename,
+      filename: filename,
       birthdate: cat.birthdate,
       lat: coords[0],
       lng: coords[1],
@@ -104,11 +106,18 @@ const catPut = async (
   }
 
   try {
-    const userId = (req.user as User).user_id;
-    const userRole = (req.user as User).role;
     const id = Number(req.params.id);
     const cat = req.body;
-    const result = await updateCat(cat, id, userId, userRole);
+    const currentUser = req.user as User;
+    if (!currentUser.user_id || !currentUser.role) {
+      throw new CustomError('Invalid user', 401);
+    }
+    const result = await updateCat(
+      cat,
+      id,
+      (req.user as User).user_id,
+      (req.user as User).role
+    );
     res.json(result);
   } catch (error) {
     next(error);

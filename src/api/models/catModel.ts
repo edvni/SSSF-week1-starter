@@ -51,7 +51,7 @@ const getCat = async (catId: number): Promise<Cat> => {
 
 // TODO: use Utility type to modify Cat type for 'data'.
 // Note that owner is not User in this case. It's just a number (user_id)
-const addCat = async (data: Omit<Cat, 'cat_id'>): Promise<MessageResponse> => {
+const addCat = async (data: Omit<Cat, 'cat_id'>): Promise<UploadResponse> => {
   const [headers] = await promisePool.execute<ResultSetHeader>(
     `
     INSERT INTO sssf_cat (cat_name, weight, owner, filename, birthdate, coords) 
@@ -70,7 +70,7 @@ const addCat = async (data: Omit<Cat, 'cat_id'>): Promise<MessageResponse> => {
   if (headers.affectedRows === 0) {
     throw new CustomError('No cats added', 400);
   }
-  return {message: 'Cat added'};
+  return {message: 'Cat added', id: headers.insertId};
 };
 
 // TODO: create updateCat function to update single cat
@@ -78,53 +78,29 @@ const addCat = async (data: Omit<Cat, 'cat_id'>): Promise<MessageResponse> => {
 // if role is user, update only cats owned by user
 // You can use updateUser function from userModel as a reference for SQL
 const updateCat = async (
-  data: Cat,
+  data: Partial<Cat>,
   catId: number,
   userId: number,
-  userRole: string
+  role: 'user' | 'admin'
 ): Promise<MessageResponse> => {
-  if (userRole === 'admin') {
-    const [headers] = await promisePool.execute<ResultSetHeader>(
-      `
-      UPDATE sssf_cat 
-      SET cat_name = ?, weight = ?, owner = ?, filename = ?, birthdate = ?, coords = POINT(?, ?)
-      WHERE cat_id = ?;
-      `,
-      [
-        data.cat_name,
-        data.weight,
-        data.owner,
-        data.filename,
-        data.birthdate,
-        data.lat,
-        data.lng,
-        catId,
-      ]
-    );
+  if (role === 'admin') {
+    const sql = promisePool.format('UPDATE sssf_cat SET ? WHERE cat_id = ?', [
+      data,
+      catId,
+    ]);
+    const [headers] = await promisePool.execute<ResultSetHeader>(sql);
     if (headers.affectedRows === 0) {
       throw new CustomError('No cats updated', 400);
     }
-    return {message: 'Cat updated'};
-  }
-  const [headers] = await promisePool.execute<ResultSetHeader>(
-    `
-    UPDATE sssf_cat 
-    SET cat_name = ?, weight = ?, filename = ?, birthdate = ?, coords = POINT(?, ?)
-    WHERE cat_id = ? AND owner = ?;
-    `,
-    [
-      data.cat_name,
-      data.weight,
-      data.filename,
-      data.birthdate,
-      data.lat,
-      data.lng,
-      catId,
-      userId,
-    ]
-  );
-  if (headers.affectedRows === 0) {
-    throw new CustomError('No cats updated', 400);
+  } else {
+    const sql = promisePool.format(
+      'UPDATE sssf_cat SET ? WHERE cat_id = ? AND owner = ?',
+      [data, catId, userId]
+    );
+    const [headers] = await promisePool.execute<ResultSetHeader>(sql);
+    if (headers.affectedRows === 0) {
+      throw new CustomError('No cats updated', 400);
+    }
   }
   return {message: 'Cat updated'};
 };

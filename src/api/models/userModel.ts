@@ -34,12 +34,12 @@ const getUser = async (userId: number): Promise<User> => {
 
 // TODO: create addUser function
 const addUser = async (
-  newUser: Omit<User, 'user_id'>
+  newUser: Omit<User, 'user_id' | 'role'>
 ): Promise<MessageResponse> => {
-  const {user_name, email, password, role} = newUser;
+  const {user_name, email, password} = newUser;
   const sql = promisePool.format(
-    'INSERT INTO sssf_user (user_name, email, password, role) VALUES (?, ?, ?, ?);',
-    [user_name, email, password, role]
+    'INSERT INTO sssf_user (user_name, email, password) VALUES (?, ?, ?);',
+    [user_name, email, password]
   );
   try {
     const [headers] = await promisePool.execute<ResultSetHeader>(sql);

@@ -12,9 +12,9 @@ type Cat = {
   cat_id: number;
   cat_name: string;
   weight: number;
-  owner: number;
+  owner: User | number;
   filename: string;
-  birthdate: Date;
+  birthdate: string;
   lat: number;
   lng: number;
 };
