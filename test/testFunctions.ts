@@ -1,3 +1,4 @@
+/* eslint-disable node/no-unpublished-import */
 import request from 'supertest';
 import {User} from '../src/types/DBTypes';
 
