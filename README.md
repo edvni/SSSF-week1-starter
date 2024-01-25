@@ -1,7 +1,3 @@
-# Week 1 Test Results
-
-![Results](https://github.com/edvni/SSSF-week1-starter/blob/main/week-1-test-results.png)
-
 # SSSF week 1 exercise. Submit to Oma
 
 This REST API is based on the API done in 2nd year course 'Basic Concepts of Web Applications'/'Web ohjelmoinnin perusteet'
